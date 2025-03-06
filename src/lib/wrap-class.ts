@@ -44,100 +44,117 @@ export function wrapClass<T extends Constructor>(
     ...options,
   };
 
-   
-  class Wrapped extends BaseClass {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(...args: any[]) {
-      super(...args);
+  // Create a wrapped class using a function to avoid TypeScript mixin constraints
+  const Wrapped = function (this: InstanceType<T>, ...args: unknown[]) {
+    // Call the original constructor
+    const instance = new BaseClass(...args);
+    Object.setPrototypeOf(this, Object.getPrototypeOf(instance));
+    
+    // Copy instance properties
+    Object.assign(this, instance);
 
-      // Get all instance methods to wrap
-      const methodNames = Object.getOwnPropertyNames(
-        BaseClass.prototype,
-      ).filter((name) =>
-        shouldWrapMethod(
-          name,
-          defaultOptions.methodFilter,
-          defaultOptions,
-          false,
-        ),
-      );
+    // Get all instance methods to wrap
+    const methodNames = Object.getOwnPropertyNames(
+      BaseClass.prototype,
+    ).filter((name) =>
+      shouldWrapMethod(
+        name,
+        defaultOptions.methodFilter,
+        defaultOptions,
+        false,
+      ),
+    );
 
-      // Add inherited methods if requested
-      if (defaultOptions.includeInherited) {
-        let proto = Object.getPrototypeOf(BaseClass.prototype);
-        while (proto && proto !== Object.prototype) {
-          methodNames.push(
-            ...Object.getOwnPropertyNames(proto).filter((name) =>
-              shouldWrapMethod(
-                name,
-                defaultOptions.methodFilter,
-                defaultOptions,
-                true,
-              ),
-            ),
-          );
-          proto = Object.getPrototypeOf(proto);
-        }
-      }
-
-      for (const name of methodNames) {
-        const original = (this as unknown as MethodContainer)[name] as Method;
-        if (typeof original !== 'function') continue;
-        
-        (this as unknown as MethodContainer)[name] = function (
-          this: unknown,
-          ...args: unknown[]
-        ) {
-          const context: HookContext = {
-            name,
-            startTime: Date.now(),
-          };
-
-          const handleError = (error: Error) => {
-            context.error = error;
-            context.duration = Date.now() - context.startTime;
-            defaultOptions.onError?.(name, error, context);
-            logger.error(
-              { method: name, error, duration: context.duration },
-              `Error in ${name}`,
-            );
-            throw error;
-          };
-
-          try {
-            defaultOptions.before?.(name, args, context);
-            logger.info({ method: name, args }, `Entering ${name}`);
-
-            const exec = () => original.apply(this, args);
-            return executeWithRetry(exec, {
-              ...defaultOptions.retry,
-              logger,
+    // Add inherited methods if requested
+    if (defaultOptions.includeInherited) {
+      let proto = Object.getPrototypeOf(BaseClass.prototype);
+      while (proto && proto !== Object.prototype) {
+        methodNames.push(
+          ...Object.getOwnPropertyNames(proto).filter((name) =>
+            shouldWrapMethod(
               name,
-            })
-              .then((result) => {
-                context.duration = Date.now() - context.startTime;
-                logger.info(
-                  { method: name, result, duration: context.duration },
-                  `Exiting ${name}`,
-                );
-                defaultOptions.after?.(name, result, context);
-                return result;
-              })
-              .catch(handleError)
-              .finally(() => {
-                defaultOptions.finally?.(name, context);
-              });
-          } catch (error) {
-            return Promise.reject(handleError(error as Error));
-          }
-        };
+              defaultOptions.methodFilter,
+              defaultOptions,
+              true,
+            ),
+          ),
+        );
+        proto = Object.getPrototypeOf(proto);
       }
     }
-  }
+
+    for (const name of methodNames) {
+      const original = (this as unknown as MethodContainer)[name] as Method;
+      if (typeof original !== 'function') continue;
+      
+      (this as unknown as MethodContainer)[name] = function (
+        this: unknown,
+        ...args: unknown[]
+      ) {
+        const context: HookContext = {
+          name,
+          startTime: Date.now(),
+        };
+
+        const handleError = (error: Error) => {
+          context.error = error;
+          context.duration = Date.now() - context.startTime;
+          defaultOptions.onError?.(name, error, context);
+          logger.error(
+            { method: name, error, duration: context.duration },
+            `Error in ${name}`,
+          );
+          throw error;
+        };
+
+        try {
+          defaultOptions.before?.(name, args, context);
+          logger.info({ method: name, args }, `Entering ${name}`);
+
+          const exec = () => original.apply(this, args);
+          return executeWithRetry(exec, {
+            ...defaultOptions.retry,
+            logger,
+            name,
+          })
+            .then((result) => {
+              context.duration = Date.now() - context.startTime;
+              logger.info(
+                { method: name, result, duration: context.duration },
+                `Exiting ${name}`,
+              );
+              defaultOptions.after?.(name, result, context);
+              return result;
+            })
+            .catch(handleError)
+            .finally(() => {
+              defaultOptions.finally?.(name, context);
+            });
+        } catch (error) {
+          return Promise.reject(handleError(error as Error));
+        }
+      };
+    }
+  } as unknown as T;
+
+  // Set up the prototype chain correctly
+  Wrapped.prototype = Object.create(BaseClass.prototype);
+  Wrapped.prototype.constructor = Wrapped;
 
   // Create a non-generic type for static methods
   const BaseClassWithMethods = BaseClass as unknown as MethodContainer;
   const WrappedWithMethods = Wrapped as unknown as MethodContainer;
+
+  // Copy static properties
+  for (const prop of Object.getOwnPropertyNames(BaseClass)) {
+    if (prop !== 'prototype' && prop !== 'name' && prop !== 'length') {
+      Object.defineProperty(
+        Wrapped,
+        prop,
+        Object.getOwnPropertyDescriptor(BaseClass, prop) || Object.create(null)
+      );
+    }
+  }
 
   // Wrap static methods if enabled
   if (defaultOptions.includeStatic) {
