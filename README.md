@@ -1,50 +1,83 @@
 # Aspect Wrap
 
+`
+
 Aspect Wrap is a streamlined, lightweight library designed to simplify aspect-oriented programming (AOP) without the encumbrance of unnecessary complexity or ceremony.
 
 By allowing you to elegantly augment existing functions with additional behaviour—such as logging, error handling, and more.
 
 With Aspect Wrap you can maintain a clear separation between core business logic and cross-cutting concerns. This approach not only enhances code readability but also improves maintainability and scalability.
 
+> **TLDR:** Wrap functions and classes to automatically add logging, error handling, and more with zero configuration.
+>
+> ```javascript
+> import { wrapClass, wrapFunction } from 'aspect-wrap';
+>
+> // Add structured logging to any function
+> const loggedFunction = wrapFunction(myFunction);
+>
+> // Add structured logging to all methods in a class
+> const LoggedClass = wrapClass(MyClass);
+> ```
+
+## Why Use Aspect Wrap?
+
+✅ **Zero Configuration** - Works out of the box with smart defaults  
+✅ **Built-in Structured Logging** - No logger? No problem! Get structured logs automatically  
+✅ **Clean Code** - Keep your business logic free from cross-cutting concerns  
+✅ **Powerful When Needed** - Simple API with advanced features when you need them  
+✅ **Framework Agnostic** - Works with any JavaScript or TypeScript codebase
+
+```javascript
+// Before: Business logic mixed with logging
+function getUserData(id) {
+  console.log(`Getting user data for ${id}`);
+  try {
+    // ...business logic...
+    console.log(`Successfully retrieved user data`);
+    return userData;
+  } catch (error) {
+    console.error(`Error getting user data: ${error.message}`);
+    throw error;
+  }
+}
+
+// After: Clean business logic with automatic logging
+function getUserData(id) {
+  // ...business logic...
+  return userData;
+}
+
+// Just wrap it - that's it!
+const loggedGetUserData = wrapFunction(getUserData);
+```
+
 ## Table of Contents
 
 - [Aspect Wrap](#aspect-wrap)
+  - [Why Use Aspect Wrap?](#why-use-aspect-wrap)
   - [Table of Contents](#table-of-contents)
-  - [Why Aspect Wrap?](#why-aspect-wrap)
-    - [Key Benefits](#key-benefits)
   - [Installation](#installation)
   - [Usage](#usage)
     - [Before Aspect Wrap: Code with Mixed Concerns](#before-aspect-wrap-code-with-mixed-concerns)
     - [After Aspect Wrap: Clean Separation of Concerns](#after-aspect-wrap-clean-separation-of-concerns)
+      - [Using with Pino Logger](#using-with-pino-logger)
+      - [Customising the Behaviour](#customising-the-behaviour)
     - [Advanced Usage with Error Handling](#advanced-usage-with-error-handling)
     - [Wrapping Classes and Methods](#wrapping-classes-and-methods)
     - [Implementing Retry Logic](#implementing-retry-logic)
   - [Using Aspect Wrap with Pino for Logging](#using-aspect-wrap-with-pino-for-logging)
     - [Installing Pino](#installing-pino)
+    - [Simple Logging with Pino](#simple-logging-with-pino)
     - [Enhanced Logging with Pino's Redaction](#enhanced-logging-with-pinos-redaction)
   - [API Reference](#api-reference)
     - [Core Functions](#core-functions)
       - [`wrapFunction(targetFunction, options)`](#wrapfunctiontargetfunction-options)
       - [`wrapClass(TargetClass, options)`](#wrapclasstargetclass-options)
     - [Retry Configuration](#retry-configuration)
-    - [Performance Monitoring](#performance-monitoring)
+  - [Performance Monitoring](#performance-monitoring)
   - [Contributing](#contributing)
   - [Licence](#licence)
-
-## Why Aspect Wrap?
-
-Aspect-oriented programming helps you separate cross-cutting concerns (like logging, security, or transaction management) from your core business logic.
-
-Aspect Wrap provides a clean, simple, and efficient way to achieve this separation, making your codebase easier to maintain, test, and scale.
-
-### Key Benefits
-
-- **Clean Separation**: Keep your business logic free from repetitive cross-cutting concerns.
-- **Easy Integration**: Minimal setup and intuitive API.
-- **Highly Customisable**: Easily extendable to fit your specific needs.
-- **Improved Developer Experience**: Write cleaner, more maintainable code.
-- **Smart Defaults**: Comes with intelligent defaults like automatic retries with exponential backoff for network requests.
-- **Error Resilience**: Built-in retry mechanisms automatically handle transient failures, particularly for HTTP 429 (Too Many Requests) and 503 (Service Unavailable) responses.
 
 ## Installation
 
@@ -100,7 +133,38 @@ calculateSum(5, 7);
 
 ### After Aspect Wrap: Clean Separation of Concerns
 
-With Aspect Wrap, you can separate your business logic from cross-cutting concerns:
+With Aspect Wrap, you can separate your business logic from cross-cutting concerns with minimal effort:
+
+```javascript
+import { wrapFunction } from 'aspect-wrap';
+
+// Pure business logic - no logging concerns
+function greet(name) {
+  return `Hello, ${name}!`;
+}
+
+function calculateSum(a, b) {
+  return a + b;
+}
+
+// Super simple usage - no logger needed!
+const loggedGreet = wrapFunction(greet);
+const loggedCalculateSum = wrapFunction(calculateSum);
+
+// Use exactly as before - no change to your calling code
+loggedGreet('Alice');
+loggedCalculateSum(5, 7);
+
+// Automatically logs structured output:
+// {"functionName":"greet","args":["Alice"],"msg":"Function called","timestamp":"2023-06-15T10:30:45.123Z"}
+// {"functionName":"greet","result":"Hello, Alice!","msg":"Function completed","timestamp":"2023-06-15T10:30:45.125Z"}
+// {"functionName":"calculateSum","args":[5,7],"msg":"Function called","timestamp":"2023-06-15T10:30:45.126Z"}
+// {"functionName":"calculateSum","result":12,"msg":"Function completed","timestamp":"2023-06-15T10:30:45.127Z"}
+```
+
+#### Using with Pino Logger
+
+For more advanced logging, you can easily pass a Pino logger:
 
 ```javascript
 import { wrapFunction } from 'aspect-wrap';
@@ -117,8 +181,28 @@ function calculateSum(a, b) {
   return a + b;
 }
 
-// Apply logging aspect separately
-const loggedGreet = wrapFunction(greet, {
+// Super simple usage - just pass your function and a logger
+const loggedGreet = wrapFunction(greet, { logger });
+const loggedCalculateSum = wrapFunction(calculateSum, { logger });
+
+// Use exactly as before
+loggedGreet('Alice');
+loggedCalculateSum(5, 7);
+
+// Logs will include:
+// {"level":30,"functionName":"greet","args":["Alice"],"msg":"Function called","time":...}
+// {"level":30,"functionName":"greet","result":"Hello, Alice!","msg":"Function completed","time":...}
+// {"level":30,"functionName":"calculateSum","args":[5,7],"msg":"Function called","time":...}
+// {"level":30,"functionName":"calculateSum","result":12,"msg":"Function completed","time":...}
+```
+
+#### Customising the Behaviour
+
+You can customise the behaviour with additional options:
+
+```javascript
+// More customised usage with before, after, and error handlers
+const customLoggedGreet = wrapFunction(greet, {
   name: 'greet',
   logger,
   before: (name, args) => logger.info({ args }, 'Calling greet'),
@@ -126,7 +210,7 @@ const loggedGreet = wrapFunction(greet, {
   onError: (name, error) => logger.error({ error }, 'Error in greet'),
 });
 
-const loggedCalculateSum = wrapFunction(calculateSum, {
+const customLoggedCalculateSum = wrapFunction(calculateSum, {
   name: 'calculateSum',
   logger,
   before: (name, args) => logger.info({ args }, 'Calculating sum'),
@@ -134,8 +218,9 @@ const loggedCalculateSum = wrapFunction(calculateSum, {
   onError: (name, error) => logger.error({ error }, 'Error calculating sum'),
 });
 
-loggedGreet('Alice').then(console.log);
-loggedCalculateSum(5, 7).then(console.log);
+// Use exactly as before
+customLoggedGreet('Alice');
+customLoggedCalculateSum(5, 7);
 ```
 
 ### Advanced Usage with Error Handling
@@ -278,19 +363,46 @@ try {
 
 ## Using Aspect Wrap with Pino for Logging
 
-Aspect Wrap integrates seamlessly with [Pino](https://github.com/pinojs/pino), a fast and efficient logging library for Node.js, providing an ultimate developer experience.
+Aspect Wrap works perfectly with [Pino](https://github.com/pinojs/pino), a super-fast logging library for Node.js.
 
 ### Installing Pino
 
-First, install Pino:
+First, install Pino alongside Aspect Wrap:
 
 ```bash
-npm install pino
+npm install aspect-wrap pino
+```
+
+### Simple Logging with Pino
+
+The simplest way to use Aspect Wrap with Pino is just passing your logger:
+
+```javascript
+import { wrapFunction } from 'aspect-wrap';
+import pino from 'pino';
+
+// Create a Pino logger
+const logger = pino();
+
+// Your normal function
+function sayHello(name) {
+  return `Hello, ${name}!`;
+}
+
+// Just wrap it with the logger - that's it!
+const loggedHello = wrapFunction(sayHello, { logger });
+
+// Use it like normal
+loggedHello('World');
+
+// Automatically logs:
+// {"level":30,"functionName":"sayHello","args":["World"],"msg":"Function called",...}
+// {"level":30,"functionName":"sayHello","result":"Hello, World!","msg":"Function completed",...}
 ```
 
 ### Enhanced Logging with Pino's Redaction
 
-One of the key advantages of using Aspect Wrap with Pino is the ability to leverage Pino's powerful redaction functionality. This allows you to automatically redact sensitive information from logs, enhancing security without cluttering your business logic:
+For sensitive data, Pino's redaction feature works great with Aspect Wrap:
 
 ```javascript
 import { wrapFunction } from 'aspect-wrap';
@@ -310,38 +422,27 @@ function processPayment(user, creditCard, amount) {
   return { success: true, transactionId: 'tx_123456' };
 }
 
-const securePaymentProcessor = wrapFunction(processPayment, {
-  name: 'processPayment',
-  logger,
-  before: (name, args) =>
-    logger.info(
-      {
-        user: args[0],
-        creditCard: args[1],
-        amount: args[2],
-      },
-      'Processing payment',
-    ),
-  after: (name, result) => logger.info({ result }, 'Payment processed'),
-  onError: (name, error) => logger.error({ error }, 'Payment failed'),
-});
+// Just wrap it with the logger - redaction happens automatically
+const securePaymentProcessor = wrapFunction(processPayment, { logger });
 
+// Process a payment with sensitive data
 securePaymentProcessor(
   { id: 'user123', name: 'Alice' },
   { number: '4111-1111-1111-1111', cvv: '123' },
   99.99,
-).then(console.log);
+);
+
 // Logs with credit card details automatically redacted:
-// {"level":30,"user":{"id":"user123","name":"Alice"},"creditCard":"[REDACTED]","amount":99.99,"msg":"Processing payment","time":...}
-// {"level":30,"result":{"success":true,"transactionId":"tx_123456"},"msg":"Payment processed","time":...}
+// {"level":30,"functionName":"processPayment","args":[{"id":"user123","name":"Alice"},{"number":"[REDACTED]","cvv":"[REDACTED]"},99.99],"msg":"Function called",...}
+// {"level":30,"functionName":"processPayment","result":{"success":true,"transactionId":"tx_123456"},"msg":"Function completed",...}
 ```
 
-This approach provides the ultimate developer experience by:
+This approach gives you:
 
-1. Keeping your business logic clean and focused
-2. Automatically handling sensitive data redaction
-3. Providing comprehensive logging without code clutter
-4. Making your code more maintainable and testable
+1. Super simple setup - just pass your logger
+2. Automatic logging of inputs and outputs
+3. Automatic redaction of sensitive data
+4. Clean business logic with no logging code mixed in
 
 ## API Reference
 
@@ -358,7 +459,7 @@ Wraps a function with additional behaviour.
   - **`after`** _(Function)_ _(optional)_: Executed after the target function. Receives function name, result, and context.
   - **`onError`** _(Function)_ _(optional)_: Executed if the target function throws an error. Receives function name, error object, and context.
   - **`finally`** _(Function)_ _(optional)_: Executed after both success and error cases. Receives function name and context.
-  - **`logger`** _(Logger)_ _(optional)_: Custom logger to use.
+  - **`logger`** _(Logger)_ _(optional)_: Custom logger to use. If not provided, a built-in structured console logger is used by default.
   - **`retry`** _(Object)_ _(optional)_: Retry configuration (see below).
   - **`preserveName`** _(boolean)_ _(optional)_: Whether to preserve the original function name (default: true).
   - **`preserveContext`** _(boolean)_ _(optional)_: Whether to bind the function to its original context (default: true).
@@ -378,7 +479,7 @@ Wraps methods of a class with additional behaviour.
   - **`after`** _(Function)_ _(optional)_: Executed after each method. Receives method name, result, and context.
   - **`onError`** _(Function)_ _(optional)_: Executed if a method throws an error. Receives method name, error object, and context.
   - **`finally`** _(Function)_ _(optional)_: Executed after both success and error cases. Receives method name and context.
-  - **`logger`** _(Logger)_ _(optional)_: Custom logger to use.
+  - **`logger`** _(Logger)_ _(optional)_: Custom logger to use. If not provided, a built-in structured console logger is used by default.
   - **`retry`** _(Object)_ _(optional)_: Retry configuration (see below).
 
 ### Retry Configuration
@@ -399,7 +500,7 @@ The retry feature allows automatic retrying of failed operations with configurab
 }
 ```
 
-### Performance Monitoring
+## Performance Monitoring
 
 Aspect Wrap can be used to implement performance monitoring:
 
