@@ -1,0 +1,206 @@
+import type { Constructor, HookContext, MethodContainer, MethodFilter, WrapClassOptions, Method } from './types';
+import { defaultLogger } from './logger';
+import { executeWithRetry } from './retry';
+
+// Helper function to check if a method should be wrapped
+function shouldWrapMethod(
+  name: string,
+  filter: MethodFilter | undefined,
+  options: WrapClassOptions,
+  isInherited = false,
+): boolean {
+  // Skip if no filter or options
+  if (!filter && !options) return true;
+
+  // Skip inherited methods if not enabled
+  if (isInherited && !options.includeInherited) return false;
+
+  // Check if method should be included based on naming conventions
+  if (!options.includePrivate && name.startsWith('_')) return false;
+  if (name === 'constructor') return false;
+
+  // Apply method filter if provided
+  if (filter) {
+    if (Array.isArray(filter)) {
+      return filter.includes(name);
+    }
+    return filter(name);
+  }
+
+  return true;
+}
+
+// Wrap a class with additional behavior
+export function wrapClass<T extends Constructor>(
+  BaseClass: T,
+  options?: WrapClassOptions,
+): T {
+  const logger = options?.logger ?? defaultLogger;
+  const defaultOptions: WrapClassOptions = {
+    includeStatic: true,
+    includeInherited: false,
+    includePrivate: false,
+    includeAccessors: false,
+    ...options,
+  };
+
+   
+  class Wrapped extends BaseClass {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    constructor(...args: any[]) {
+      super(...args);
+
+      // Get all instance methods to wrap
+      const methodNames = Object.getOwnPropertyNames(
+        BaseClass.prototype,
+      ).filter((name) =>
+        shouldWrapMethod(
+          name,
+          defaultOptions.methodFilter,
+          defaultOptions,
+          false,
+        ),
+      );
+
+      // Add inherited methods if requested
+      if (defaultOptions.includeInherited) {
+        let proto = Object.getPrototypeOf(BaseClass.prototype);
+        while (proto && proto !== Object.prototype) {
+          methodNames.push(
+            ...Object.getOwnPropertyNames(proto).filter((name) =>
+              shouldWrapMethod(
+                name,
+                defaultOptions.methodFilter,
+                defaultOptions,
+                true,
+              ),
+            ),
+          );
+          proto = Object.getPrototypeOf(proto);
+        }
+      }
+
+      for (const name of methodNames) {
+        const original = (this as unknown as MethodContainer)[name] as Method;
+        if (typeof original !== 'function') continue;
+        
+        (this as unknown as MethodContainer)[name] = function (
+          this: unknown,
+          ...args: unknown[]
+        ) {
+          const context: HookContext = {
+            name,
+            startTime: Date.now(),
+          };
+
+          const handleError = (error: Error) => {
+            context.error = error;
+            context.duration = Date.now() - context.startTime;
+            defaultOptions.onError?.(name, error, context);
+            logger.error(
+              { method: name, error, duration: context.duration },
+              `Error in ${name}`,
+            );
+            throw error;
+          };
+
+          try {
+            defaultOptions.before?.(name, args, context);
+            logger.info({ method: name, args }, `Entering ${name}`);
+
+            const exec = () => original.apply(this, args);
+            return executeWithRetry(exec, {
+              ...defaultOptions.retry,
+              logger,
+              name,
+            })
+              .then((result) => {
+                context.duration = Date.now() - context.startTime;
+                logger.info(
+                  { method: name, result, duration: context.duration },
+                  `Exiting ${name}`,
+                );
+                defaultOptions.after?.(name, result, context);
+                return result;
+              })
+              .catch(handleError)
+              .finally(() => {
+                defaultOptions.finally?.(name, context);
+              });
+          } catch (error) {
+            return Promise.reject(handleError(error as Error));
+          }
+        };
+      }
+    }
+  }
+
+  // Create a non-generic type for static methods
+  const BaseClassWithMethods = BaseClass as unknown as MethodContainer;
+  const WrappedWithMethods = Wrapped as unknown as MethodContainer;
+
+  // Wrap static methods if enabled
+  if (defaultOptions.includeStatic) {
+    const staticNames = Object.getOwnPropertyNames(BaseClass).filter(
+      (name) =>
+        !['prototype', 'name', 'length'].includes(name) &&
+        typeof BaseClassWithMethods[name] === 'function' &&
+        shouldWrapMethod(
+          name,
+          defaultOptions.methodFilter,
+          defaultOptions,
+          false,
+        ),
+    );
+
+    for (const name of staticNames) {
+      const originalStatic = BaseClassWithMethods[name] as Method;
+      WrappedWithMethods[name] = function (...args: unknown[]) {
+        const context: HookContext = {
+          name: `static ${name}`,
+          startTime: Date.now(),
+        };
+
+        const handleError = (error: Error) => {
+          context.error = error;
+          context.duration = Date.now() - context.startTime;
+          defaultOptions.onError?.(name, error, context);
+          logger.error(
+            { method: name, error, duration: context.duration },
+            `Error in static ${name}`,
+          );
+          throw error;
+        };
+
+        try {
+          defaultOptions.before?.(name, args, context);
+          logger.info({ method: name, args }, `Entering static ${name}`);
+
+          const exec = () => originalStatic.apply(BaseClass, args);
+          return executeWithRetry(exec, {
+            ...defaultOptions.retry,
+            logger,
+            name,
+          })
+            .then((result) => {
+              context.duration = Date.now() - context.startTime;
+              logger.info(
+                { method: name, result, duration: context.duration },
+                `Exiting static ${name}`,
+              );
+              defaultOptions.after?.(name, result, context);
+              return result;
+            })
+            .catch(handleError)
+            .finally(() => {
+              defaultOptions.finally?.(name, context);
+            });
+        } catch (error) {
+          return Promise.reject(handleError(error as Error));
+        }
+      };
+    }
+  }
+
+  return Wrapped;
+} 

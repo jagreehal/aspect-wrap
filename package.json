@@ -1,0 +1,58 @@
+{
+  "name": "aspect-wrap",
+  "version": "1.0.0",
+  "description": "A lightweight library for Aspect-Oriented Programming (AOP), enabling function and class wrapping with logging, retry logic, and more.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "mkdir -p dist && rm -rf dist/*; dts-bundle-generator -o dist/index.d.ts src/index.ts && prettier --ignore-path '' --write dist/index.d.ts && esbuild --target=es2024 --format=esm --outfile=dist/index.js --bundle ./src/index.ts",
+    "format": "prettier \"**/*.{js,jsx,json,tsx,ts}\" --write",
+    "lint": "eslint --cache .",
+    "test": "vitest --run",
+    "example:pino": "tsx src/examples/pino.ts"
+  },
+  "author": {
+    "name": "Jag Reehal",
+    "email": "jag@jageehal.com"
+  },
+  "tags": [
+    "aspect-oriented-programming",
+    "aop"
+  ],
+  "keywords": [
+    "aspect-oriented-programming",
+    "aop",
+    "typescript"
+  ],
+  "homepage": "https://github.com/jagreehal/aspect-wrap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jagreehal/aspect-wrap"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+    "@total-typescript/ts-reset": "^0.6.1",
+    "@total-typescript/tsconfig": "^1.0.4",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.13.9",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
+    "dts-bundle-generator": "^9.5.1",
+    "esbuild": "^0.25.0",
+    "eslint": "9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-unicorn": "^57.0.0",
+    "pino": "^9.6.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.0",
+    "vitest": "^3.0.7"
+  }
+}
