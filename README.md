@@ -2,13 +2,15 @@
 
 `
 
-Aspect Wrap is a streamlined, lightweight library designed to simplify aspect-oriented programming (AOP) without the encumbrance of unnecessary complexity or ceremony.
+Aspect Wrap is a streamlined, lightweight library designed to simplify aspect-oriented programming (AOP) without unnecessary complexity or ceremony.
 
-By allowing you to elegantly augment existing functions with additional behaviour—such as logging, error handling, and more.
+By allowing you to elegantly augment existing functions with additional behaviour such as logging, error handling, and retires.
 
 With Aspect Wrap you can maintain a clear separation between core business logic and cross-cutting concerns. This approach not only enhances code readability but also improves maintainability and scalability.
 
-> **TLDR:** Wrap functions and classes to automatically add logging, error handling, and more with zero configuration.
+Aspect Wrap is designed to work seamlessly in both Node.js and browser environments, making it a versatile choice for any JavaScript or TypeScript project.
+
+> **TLDR:** Wrap functions and classes to automatically add logging, error handling, and retries with zero configuration.
 >
 > ```javascript
 > import { wrapClass, wrapFunction } from 'aspect-wrap';
@@ -26,7 +28,8 @@ With Aspect Wrap you can maintain a clear separation between core business logic
 ✅ **Built-in Structured Logging** - No logger? No problem! Get structured logs automatically  
 ✅ **Clean Code** - Keep your business logic free from cross-cutting concerns  
 ✅ **Powerful When Needed** - Simple API with advanced features when you need them  
-✅ **Framework Agnostic** - Works with any JavaScript or TypeScript codebase
+✅ **Framework Agnostic** - Works with any JavaScript or TypeScript codebase  
+✅ **Universal** - Works in both Node.js and browser environments
 
 ```javascript
 // Before: Business logic mixed with logging
@@ -58,6 +61,7 @@ const loggedGetUserData = wrapFunction(getUserData);
   - [Why Use Aspect Wrap?](#why-use-aspect-wrap)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
+    - [Browser Usage](#browser-usage)
   - [Usage](#usage)
     - [Before Aspect Wrap: Code with Mixed Concerns](#before-aspect-wrap-code-with-mixed-concerns)
     - [After Aspect Wrap: Clean Separation of Concerns](#after-aspect-wrap-clean-separation-of-concerns)
@@ -75,7 +79,6 @@ const loggedGetUserData = wrapFunction(getUserData);
       - [`wrapFunction(targetFunction, options)`](#wrapfunctiontargetfunction-options)
       - [`wrapClass(TargetClass, options)`](#wrapclasstargetclass-options)
     - [Retry Configuration](#retry-configuration)
-  - [Performance Monitoring](#performance-monitoring)
   - [Contributing](#contributing)
   - [Licence](#licence)
 
@@ -88,6 +91,21 @@ npm install aspect-wrap
 pnpm add aspect-wrap
 bun add aspect-wrap
 yarn add aspect-wrap
+```
+
+### Browser Usage
+
+Aspect Wrap works in browser environments too. You can use it with bundlers like webpack, Rollup, or Vite:
+
+```javascript
+// Using ES modules
+import { wrapClass, wrapFunction } from 'aspect-wrap';
+```
+
+or with unpkg:
+
+```html
+<script src="https://unpkg.com/aspect-wrap"></script>
 ```
 
 ## Usage
@@ -343,12 +361,13 @@ async function fetchDataWithRetry(url, maxRetries = 3) {
 const fetchWithRetry = wrapFunction(fetchData, {
   name: 'fetchData',
   retry: {
-    attempts: 3,
-    delay: 100,
-    factor: 2,
-    maxDelay: 30000,
-    jitter: true,
-    shouldRetry: (error) => error.status === 429,
+    attempts: 3, // Maximum number of attempts (default: 3)
+    delay: 100, // Initial delay in ms (default: 100)
+    factor: 2, // Backoff multiplier (default: 2)
+    maxDelay: 30000, // Maximum delay between retries (default: 30000)
+    jitter: true, // Whether to add randomness to delay (default: true)
+    shouldRetry: (error) => error.status === 429, // Function to determine if an error should trigger a retry
+    // By default retries on HTTP 429 and 503 status codes
   },
 });
 
@@ -448,6 +467,8 @@ This approach gives you:
 
 ### Core Functions
 
+All functions and features of Aspect Wrap are compatible with both Node.js and browser environments.
+
 #### `wrapFunction(targetFunction, options)`
 
 Wraps a function with additional behaviour.
@@ -489,8 +510,8 @@ The retry feature allows automatic retrying of failed operations with configurab
 ```javascript
 {
   retry: {
-    attempts: 3,                                  // Maximum number of attempts (default: 1)
-    delay: 100,                                   // Initial delay in ms (default: 0)
+    attempts: 3,                                  // Maximum number of attempts (default: 3)
+    delay: 100,                                   // Initial delay in ms (default: 100)
     factor: 2,                                    // Backoff multiplier (default: 2)
     maxDelay: 30000,                              // Maximum delay between retries (default: 30000)
     jitter: true,                                 // Whether to add randomness to delay (default: true)
@@ -498,24 +519,6 @@ The retry feature allows automatic retrying of failed operations with configurab
                                                   // By default retries on HTTP 429 and 503 status codes
   }
 }
-```
-
-## Performance Monitoring
-
-Aspect Wrap can be used to implement performance monitoring:
-
-```javascript
-const monitoredFunction = wrapFunction(myFunction, {
-  name: 'myFunction',
-  before: (name, args, context) => {
-    context.startTime = performance.now();
-  },
-  after: (name, result, context) => {
-    const duration = performance.now() - context.startTime;
-    console.log(`Function executed in ${duration}ms`);
-    return result;
-  },
-});
 ```
 
 ## Contributing

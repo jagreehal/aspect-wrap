@@ -1,7 +1,6 @@
 import pino from 'pino';
 import { wrapClass } from 'src';
 
-// Configure Pino logger with good defaults
 export const logger = pino({});
 
 interface User {
@@ -67,35 +66,10 @@ export class UserService {
   }
 }
 
-// Create a logger instance for the UserService
-
 // Create a wrapped version of UserService with logging and retries
 export const WrappedUserService = wrapClass(UserService, {
   logger,
-  retry: {
-    attempts: 3,
-    delay: 1000,
-    factor: 2,
-    maxDelay: 5000,
-    shouldRetry: (error) => error.status === 503, // Only retry database connection errors
-  },
-  methodFilter: [
-    'createUser',
-    'getUser',
-    'updateUser',
-    'deleteUser',
-    'validateEmail',
-  ],
-  includeStatic: true,
 });
-
-const userService = new UserService();
-userService.createUser({
-  id: '1',
-  name: 'John Doe',
-  email: 'john@example.com',
-});
-console.log('Using unwrapped UserService');
 const wrappedUserService = new WrappedUserService();
 wrappedUserService.createUser({
   id: '1',

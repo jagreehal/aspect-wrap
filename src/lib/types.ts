@@ -82,8 +82,8 @@ export interface WrapFunctionOptions extends BaseWrapperOptions {
 
 // Default retry configuration
 export const DEFAULT_RETRY = {
-  attempts: 1,
-  delay: 0,
+  attempts: 3,
+  delay: 100,
   factor: 2,
   maxDelay: 30_000,
   jitter: true,

@@ -101,7 +101,7 @@ export function wrapClass<T extends Constructor>(
           context.duration = Date.now() - context.startTime;
           defaultOptions.onError?.(name, error, context);
           logger.error(
-            { method: name, error, duration: context.duration },
+            { method: name, error },
             `Error in ${name}`,
           );
           throw error;
@@ -118,11 +118,16 @@ export function wrapClass<T extends Constructor>(
             name,
           })
             .then((result) => {
+              // Calculate duration for backward compatibility with tests
               context.duration = Date.now() - context.startTime;
-              logger.info(
-                { method: name, result, duration: context.duration },
-                `Exiting ${name}`,
-              );
+              
+              const logObj: Record<string, unknown> = { method: name };
+              
+              if (result !== undefined) {
+                logObj.result = result;
+              }
+              
+              logger.info(logObj, `Exiting ${name}`);
               defaultOptions.after?.(name, result, context);
               return result;
             })
@@ -183,7 +188,7 @@ export function wrapClass<T extends Constructor>(
           context.duration = Date.now() - context.startTime;
           defaultOptions.onError?.(name, error, context);
           logger.error(
-            { method: name, error, duration: context.duration },
+            { method: name, error },
             `Error in static ${name}`,
           );
           throw error;
@@ -201,10 +206,14 @@ export function wrapClass<T extends Constructor>(
           })
             .then((result) => {
               context.duration = Date.now() - context.startTime;
-              logger.info(
-                { method: name, result, duration: context.duration },
-                `Exiting static ${name}`,
-              );
+              
+              const logObj: Record<string, unknown> = { method: name };
+              
+              if (result !== undefined) {
+                logObj.result = result;
+              }
+              
+              logger.info(logObj, `Exiting static ${name}`);
               defaultOptions.after?.(name, result, context);
               return result;
             })

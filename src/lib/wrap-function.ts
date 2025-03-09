@@ -26,7 +26,7 @@ export function wrapFunction<Args extends unknown[], Result>(
       context.duration = Date.now() - context.startTime;
       defaultOptions.onError?.(name, error, context);
       logger.error(
-        { error, duration: context.duration },
+        { error },
         `Error in function ${name}`,
       );
       throw error;
@@ -46,10 +46,14 @@ export function wrapFunction<Args extends unknown[], Result>(
       })
         .then((result) => {
           context.duration = Date.now() - context.startTime;
-          logger.info(
-            { result, duration: context.duration },
-            `Exiting function ${name}`,
-          );
+          
+          const logObj: Record<string, unknown> = {};
+          
+          if (result !== undefined) {
+            logObj.result = result;
+          }
+          
+          logger.info(logObj, `Exiting function ${name}`);
           defaultOptions.after?.(name, result, context);
           return result as Result;
         })
