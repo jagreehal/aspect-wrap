@@ -45,7 +45,7 @@
     "@typescript-eslint/parser": "^8.26.0",
     "dts-bundle-generator": "^9.5.1",
     "esbuild": "^0.25.0",
-    "eslint": "9.21.0",
+    "eslint": "9.22.0",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-unicorn": "^57.0.0",
     "pino": "^9.6.0",
