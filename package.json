@@ -1,15 +1,23 @@
 {
   "name": "aspect-wrap",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A lightweight library for Aspect-Oriented Programming (AOP), enabling function and class wrapping with logging, retry logic, and more.",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "mkdir -p dist && rm -rf dist/*; dts-bundle-generator -o dist/index.d.ts src/index.ts && prettier --ignore-path '' --write dist/index.d.ts && esbuild --target=es2024 --format=esm --outfile=dist/index.js --bundle ./src/index.ts",
+    "build": "tsup",
     "format": "prettier \"**/*.{js,jsx,json,tsx,ts}\" --write",
     "lint": "eslint --cache .",
     "test": "vitest --run",
@@ -43,13 +51,12 @@
     "@types/node": "^22.13.9",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
-    "dts-bundle-generator": "^9.5.1",
-    "esbuild": "^0.25.0",
     "eslint": "9.22.0",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-unicorn": "^57.0.0",
     "pino": "^9.6.0",
     "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0",
     "vitest": "^3.0.7"
