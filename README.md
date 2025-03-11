@@ -1,14 +1,4 @@
-# Aspect Wrap
-
-`
-
-Aspect Wrap is a streamlined, lightweight library designed to simplify aspect-oriented programming (AOP) without unnecessary complexity or ceremony.
-
-By allowing you to elegantly augment existing functions with additional behaviour such as logging, error handling, and retires.
-
-With Aspect Wrap you can maintain a clear separation between core business logic and cross-cutting concerns. This approach not only enhances code readability but also improves maintainability and scalability.
-
-Aspect Wrap is designed to work seamlessly in both Node.js and browser environments, making it a versatile choice for any JavaScript or TypeScript project.
+# 🎁 Aspect Wrap
 
 > **TLDR:** Wrap functions and classes to automatically add logging, error handling, and retries with zero configuration.
 >
@@ -22,13 +12,26 @@ Aspect Wrap is designed to work seamlessly in both Node.js and browser environme
 > const LoggedClass = wrapClass(MyClass);
 > ```
 
+Aspect Wrap is a streamlined, lightweight library designed to simplify aspect-oriented programming (AOP) without unnecessary complexity or ceremony.
+
+By allowing you to elegantly augment existing functions with additional behaviour such as logging, error handling, and retires.
+
+With Aspect Wrap you can maintain a clear separation between core business logic and cross-cutting concerns. This approach not only enhances code readability but also improves maintainability and scalability.
+
+Aspect Wrap is designed to work seamlessly in both Node.js and browser environments, making it a versatile choice for any JavaScript or TypeScript project.
+
 ## Why Use Aspect Wrap?
 
-✅ **Zero Configuration** - Works out of the box with smart defaults  
-✅ **Built-in Structured Logging** - No logger? No problem! Get structured logs automatically  
-✅ **Clean Code** - Keep your business logic free from cross-cutting concerns  
-✅ **Powerful When Needed** - Simple API with advanced features when you need them  
-✅ **Framework Agnostic** - Works with any JavaScript or TypeScript codebase  
+✅ **Zero Configuration** - Works out of the box with smart defaults
+
+✅ **Built-in Structured Logging** - No logger? No problem! Get structured logs automatically
+
+✅ **Clean Code** - Keep your business logic free from cross-cutting concerns
+
+✅ **Powerful When Needed** - Simple API with advanced features when you need them
+
+✅ **Framework Agnostic** - Works with any JavaScript or TypeScript codebase
+
 ✅ **Universal** - Works in both Node.js and browser environments
 
 ```javascript
@@ -57,7 +60,7 @@ const loggedGetUserData = wrapFunction(getUserData);
 
 ## Table of Contents
 
-- [Aspect Wrap](#aspect-wrap)
+- [🎁 Aspect Wrap](#-aspect-wrap)
   - [Why Use Aspect Wrap?](#why-use-aspect-wrap)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
@@ -102,10 +105,28 @@ Aspect Wrap works in browser environments too. You can use it with bundlers like
 import { wrapClass, wrapFunction } from 'aspect-wrap';
 ```
 
-or with unpkg:
+Or directly in the browser via CDN:
 
 ```html
-<script src="https://unpkg.com/aspect-wrap"></script>
+<!-- ESM version -->
+<script type="module">
+  import {
+    wrapClass,
+    wrapFunction,
+  } from 'https://unpkg.com/aspect-wrap/dist/index.js';
+</script>
+
+<!-- UMD version (global variable) -->
+<script src="https://unpkg.com/aspect-wrap/dist/index.cjs"></script>
+<script>
+  const { wrapClass, wrapFunction } = aspectWrap;
+</script>
+```
+
+Note: When using via CDN, make sure to specify the version for production use:
+
+```html
+https://unpkg.com/aspect-wrap@1.0.2/dist/index.js
 ```
 
 ## Usage
